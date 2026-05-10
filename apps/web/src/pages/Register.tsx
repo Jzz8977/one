@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Button, Card, CardBody, Input, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
+import { formatApiError } from '../lib/error';
 import { useAuthStore } from '../store/auth';
 import type { ApiResponse, AuthTokens } from '@app/shared';
 
@@ -28,8 +29,7 @@ export function RegisterPage() {
       toast.success('注册成功');
       navigate('/dashboard');
     } catch (err) {
-      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '注册失败';
-      toast.error(msg);
+      toast.error(formatApiError(err, '注册失败'));
     } finally {
       setLoading(false);
     }

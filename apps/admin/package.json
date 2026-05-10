@@ -4,8 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "dev": "vite --port 5174",
-    "build": "tsc -b --noEmit && vite build",
+    "dev": "dotenv -e ../../.env -- vite --port 5174",
+    "build": "dotenv -e ../../.env -- vite build",
     "preview": "vite preview --host 0.0.0.0 --port 5174",
     "typecheck": "tsc --noEmit"
   },
@@ -24,6 +24,7 @@
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "dotenv-cli": "^8.0.0",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.16",
     "typescript": "^5.7.2",

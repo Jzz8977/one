@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useState } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Card, CardBody, Input, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
 import { useAuthStore } from '../store/auth';
@@ -12,6 +12,12 @@ export function LoginPage() {
   const setTokens = useAuthStore((s) => s.setTokens);
   const navigate = useNavigate();
   const toast = useToast();
+  const [params] = useSearchParams();
+
+  useEffect(() => {
+    const reason = params.get('reason');
+    if (reason === 'session_expired') toast.error('登录已失效，请重新登录');
+  }, [params, toast]);
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -23,7 +29,8 @@ export function LoginPage() {
       toast.success('登录成功');
       navigate('/admin/dashboard');
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '登录失败');
+      const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '登录失败';
+      toast.error(msg);
     } finally {
       setLoading(false);
     }

@@ -1,5 +1,5 @@
 import type { HTMLAttributes } from 'react';
-import { cn } from '../utils.js';
+import { cn } from '../utils';
 
 type Tone = 'gray' | 'green' | 'red' | 'yellow' | 'blue';
 

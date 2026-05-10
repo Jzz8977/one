@@ -14,30 +14,46 @@ api.interceptors.request.use((config) => {
 
 let refreshing: Promise<string | null> | null = null;
 
+function forceLogout(reason?: string) {
+  const had = useAuthStore.getState().accessToken;
+  useAuthStore.getState().clear();
+  if (had && typeof window !== 'undefined' && !window.location.pathname.startsWith('/login')) {
+    const target = reason ? `/login?reason=${encodeURIComponent(reason)}` : '/login';
+    window.location.replace(target);
+  }
+}
+
 api.interceptors.response.use(
   (resp) => resp,
   async (error: AxiosError<ApiResponse>) => {
     const original = error.config;
-    if (error.response?.status === 401 && original && !(original as { _retry?: boolean })._retry) {
+    const status = error.response?.status;
+    const url = original?.url ?? '';
+
+    // refresh 接口本身 401 → 直接登出
+    if (status === 401 && url.includes('/auth/refresh')) {
+      forceLogout('session_expired');
+      return Promise.reject(error);
+    }
+
+    if (status === 401 && original && !(original as { _retry?: boolean })._retry) {
       const refreshToken = useAuthStore.getState().refreshToken;
       if (!refreshToken) {
-        useAuthStore.getState().clear();
+        forceLogout();
         return Promise.reject(error);
       }
       (original as { _retry?: boolean })._retry = true;
-      refreshing ??= refreshAccessToken(refreshToken)
-        .catch((e) => {
-          useAuthStore.getState().clear();
-          throw e;
-        })
-        .finally(() => {
-          refreshing = null;
-        });
+      refreshing ??= refreshAccessToken(refreshToken).finally(() => {
+        refreshing = null;
+      });
       const newToken = await refreshing;
       if (newToken) {
         original.headers!.Authorization = `Bearer ${newToken}`;
         return api.request(original);
       }
+      // refresh 失败：登出 + 跳转
+      forceLogout('session_expired');
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   },

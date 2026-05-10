@@ -1,11 +1,15 @@
 import { ArgumentMetadata, BadRequestException, Injectable, PipeTransform } from '@nestjs/common';
 import { ZodSchema, ZodError } from 'zod';
 
+/**
+ * 仅校验 @Body() 参数，避开 @CurrentUser/@Param/@Query 等同 handler 的其他参数。
+ */
 @Injectable()
 export class ZodValidationPipe implements PipeTransform {
   constructor(private schema: ZodSchema) {}
 
-  transform(value: unknown, _metadata: ArgumentMetadata) {
+  transform(value: unknown, metadata: ArgumentMetadata) {
+    if (metadata.type !== 'body') return value;
     try {
       return this.schema.parse(value);
     } catch (e) {

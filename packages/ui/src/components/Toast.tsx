@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useState, type ReactNode } from 'react';
-import { cn } from '../utils.js';
+import { cn } from '../utils';
 
 type ToastType = 'success' | 'error' | 'info';
 interface ToastItem {

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardBody, Input, Modal, PageHeader, Table, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
+import { formatApiError } from '../lib/error';
 import type { ApiKeyCreateResultDto, ApiKeyDto, ApiResponse } from '@app/shared';
 
 export function ApiKeysPage() {
@@ -24,7 +25,7 @@ export function ApiKeysPage() {
       setOpen(false);
       qc.invalidateQueries({ queryKey: ['api-keys'] });
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '创建失败');
+      toast.error(formatApiError(err, '创建失败'));
     }
   };
 

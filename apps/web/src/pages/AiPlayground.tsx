@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, CardBody, PageHeader, Textarea, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
+import { formatApiError } from '../lib/error';
 import type { AiModelDto, ApiResponse, ChatResponseDto } from '@app/shared';
 
 export function AiPlaygroundPage() {
@@ -30,7 +31,7 @@ export function AiPlaygroundPage() {
       });
       setReply(unwrap(resp));
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '调用失败');
+      toast.error(formatApiError(err, '调用失败'));
     } finally {
       setLoading(false);
     }

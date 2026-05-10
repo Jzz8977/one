@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Button, Card, CardBody, Input, PageHeader, Textarea, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
+import { formatApiError } from '../lib/error';
 import type { ApiResponse } from '@app/shared';
 
 interface Profile {
@@ -26,7 +27,7 @@ export function ProfilePage() {
       await api.patch('/users/me/profile', data);
       toast.success('已保存');
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '保存失败');
+      toast.error(formatApiError(err, '保存失败'));
     } finally {
       setLoading(false);
     }
@@ -38,7 +39,7 @@ export function ProfilePage() {
       toast.success('密码已修改，请重新登录');
       setOldPassword(''); setNewPassword('');
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '修改失败');
+      toast.error(formatApiError(err, '修改失败'));
     }
   };
 

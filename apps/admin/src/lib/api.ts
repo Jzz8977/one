@@ -11,35 +11,55 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
+function forceLogout(reason?: string) {
+  const had = useAuthStore.getState().accessToken;
+  useAuthStore.getState().clear();
+  if (had && typeof window !== 'undefined' && !window.location.pathname.startsWith('/admin/login')) {
+    const target = reason ? `/admin/login?reason=${encodeURIComponent(reason)}` : '/admin/login';
+    window.location.replace(target);
+  }
+}
+
 let refreshing: Promise<string | null> | null = null;
 api.interceptors.response.use(
   (r) => r,
   async (error: AxiosError<ApiResponse>) => {
     const original = error.config;
-    if (error.response?.status === 401 && original && !(original as { _retry?: boolean })._retry) {
+    const status = error.response?.status;
+    const url = original?.url ?? '';
+
+    if (status === 401 && url.includes('/auth/refresh')) {
+      forceLogout('session_expired');
+      return Promise.reject(error);
+    }
+
+    if (status === 401 && original && !(original as { _retry?: boolean })._retry) {
       const rt = useAuthStore.getState().refreshToken;
       if (!rt) {
-        useAuthStore.getState().clear();
+        forceLogout();
         return Promise.reject(error);
       }
       (original as { _retry?: boolean })._retry = true;
-      refreshing ??= refreshAccess(rt)
-        .catch((e) => { useAuthStore.getState().clear(); throw e; })
-        .finally(() => { refreshing = null; });
+      refreshing ??= refreshAccess(rt).finally(() => {
+        refreshing = null;
+      });
       const token = await refreshing;
       if (token) {
         original.headers!.Authorization = `Bearer ${token}`;
         return api.request(original);
       }
+      forceLogout('session_expired');
+      return Promise.reject(error);
     }
     return Promise.reject(error);
   },
 );
 
-async function refreshAccess(rt: string) {
+async function refreshAccess(rt: string): Promise<string | null> {
   try {
     const r = await axios.post<ApiResponse<{ accessToken: string; refreshToken: string }>>(
-      `${baseURL}/auth/refresh`, { refreshToken: rt },
+      `${baseURL}/auth/refresh`,
+      { refreshToken: rt },
     );
     if (!r.data.content) return null;
     useAuthStore.getState().setTokens(r.data.content.accessToken, r.data.content.refreshToken);

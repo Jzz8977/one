@@ -1,6 +1,7 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Badge, Button, Card, CardBody, PageHeader, Table, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
+import { formatApiError } from '../lib/error';
 import type { ApiResponse, OrderDto, PageResult, ProductDto } from '@app/shared';
 
 export function BillingPage() {
@@ -23,7 +24,7 @@ export function BillingPage() {
       qc.invalidateQueries({ queryKey: ['my-orders'] });
       qc.invalidateQueries({ queryKey: ['credits-account'] });
     } catch (err) {
-      toast.error((err as { response?: { data?: { message?: string } } })?.response?.data?.message ?? '支付失败');
+      toast.error(formatApiError(err, '支付失败'));
     }
   };
 
