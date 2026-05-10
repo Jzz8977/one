@@ -1,0 +1,305 @@
+// Prisma schema for AI SaaS Starter
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// =====================================================
+// Users
+// =====================================================
+model User {
+  id             String   @id @default(cuid())
+  email          String   @unique
+  phone          String?  @unique
+  passwordHash   String
+  status         String   @default("active") // active | disabled | pending
+  failedLoginCount Int    @default(0)
+  lockedUntil    DateTime?
+  lastLoginAt    DateTime?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  profile         UserProfile?
+  sessions        Session[]
+  roles           UserRole[]
+  creditAccount   CreditAccount?
+  creditTxs       CreditTransaction[]
+  orders          Order[]
+  payments        PaymentRecord[]
+  aiUsageLogs     AiUsageLog[]
+  apiKeys         ApiKey[]
+  adminLogs       AdminLog[]
+
+  @@index([status])
+  @@index([createdAt])
+}
+
+model UserProfile {
+  id        String   @id @default(cuid())
+  userId    String   @unique
+  nickname  String?
+  avatar    String?
+  bio       String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Session {
+  id              String   @id @default(cuid())
+  userId          String
+  refreshTokenHash String  @unique
+  userAgent       String?
+  ip              String?
+  expiresAt       DateTime
+  revokedAt       DateTime?
+  createdAt       DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([expiresAt])
+}
+
+// =====================================================
+// RBAC
+// =====================================================
+model Role {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  description String?
+  isSystem    Boolean  @default(false)
+  createdAt   DateTime @default(now())
+
+  users       UserRole[]
+  permissions RolePermission[]
+}
+
+model Permission {
+  id          String   @id @default(cuid())
+  code        String   @unique
+  description String?
+
+  roles RolePermission[]
+}
+
+model UserRole {
+  userId    String
+  roleId    String
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  role Role @relation(fields: [roleId], references: [id], onDelete: Cascade)
+
+  @@id([userId, roleId])
+}
+
+model RolePermission {
+  roleId       String
+  permissionId String
+
+  role       Role       @relation(fields: [roleId], references: [id], onDelete: Cascade)
+  permission Permission @relation(fields: [permissionId], references: [id], onDelete: Cascade)
+
+  @@id([roleId, permissionId])
+}
+
+// =====================================================
+// Credits
+// =====================================================
+model CreditAccount {
+  id            String   @id @default(cuid())
+  userId        String   @unique
+  balance       Int      @default(0)
+  frozenBalance Int      @default(0)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model CreditTransaction {
+  id           String   @id @default(cuid())
+  userId       String
+  type         String   // recharge|consume|refund|admin_adjust|gift|freeze|unfreeze
+  amount       Int      // 正负，单位：积分
+  balanceAfter Int
+  remark       String?
+  // 关联信息：订单号、AI 调用 ID、管理员 ID 等
+  refType      String?
+  refId        String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([type])
+  @@index([refType, refId])
+}
+
+// =====================================================
+// Products & Orders
+// =====================================================
+model Product {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  price       Int      // 单位：分
+  credits     Int
+  active      Boolean  @default(true)
+  sort        Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  orders Order[]
+}
+
+model Order {
+  id          String   @id @default(cuid())
+  orderNo     String   @unique
+  userId      String
+  productId   String?
+  productName String?
+  type        String   @default("recharge") // recharge | subscription | other
+  amount      Int      // 实付金额（分）
+  credits     Int      // 应得积分
+  status      String   @default("pending") // pending|paid|closed|refunded|failed
+  paidAt      DateTime?
+  closedAt    DateTime?
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  user     User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  product  Product?       @relation(fields: [productId], references: [id])
+  payments PaymentRecord[]
+
+  @@index([userId, createdAt])
+  @@index([status])
+}
+
+model PaymentRecord {
+  id            String   @id @default(cuid())
+  orderId       String
+  userId        String
+  method        String   // mock | wechat | alipay
+  status        String   @default("created") // created|success|failed|refunded
+  amount        Int
+  outTradeNo    String?  @unique // 第三方交易号
+  rawNotify     Json?
+  paidAt        DateTime?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([orderId])
+  @@index([status])
+}
+
+// =====================================================
+// AI
+// =====================================================
+model AiProvider {
+  id        String   @id @default(cuid())
+  code      String   @unique // openai | openrouter | siliconflow | custom-x
+  name      String
+  baseUrl   String
+  apiKeyEnc String?  // 加密保存或留空，使用环境变量
+  active    Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  models AiModel[]
+}
+
+model AiModel {
+  id                  String   @id @default(cuid())
+  providerId          String
+  code                String
+  name                String
+  // 价格：每 1K tokens 多少积分（整数，避免精度问题）
+  inputPricePerKToken Int      @default(0)
+  outputPricePerKToken Int     @default(0)
+  active              Boolean  @default(true)
+  createdAt           DateTime @default(now())
+  updatedAt           DateTime @updatedAt
+
+  provider AiProvider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, code])
+}
+
+model AiUsageLog {
+  id               String   @id @default(cuid())
+  userId           String
+  apiKeyId         String?
+  provider         String
+  model            String
+  promptTokens     Int      @default(0)
+  completionTokens Int      @default(0)
+  totalTokens      Int      @default(0)
+  creditsCost      Int      @default(0)
+  status           String   // success|failed|timeout
+  errorMessage     String?
+  durationMs       Int?
+  createdAt        DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  apiKey ApiKey? @relation(fields: [apiKeyId], references: [id])
+
+  @@index([userId, createdAt])
+  @@index([model])
+  @@index([status])
+}
+
+// =====================================================
+// API Keys
+// =====================================================
+model ApiKey {
+  id         String   @id @default(cuid())
+  userId     String
+  name       String
+  keyHash    String   @unique
+  prefix     String   // 形如 sk-abc12... 的展示前缀
+  status     String   @default("active") // active | disabled
+  lastUsedAt DateTime?
+  createdAt  DateTime @default(now())
+
+  user        User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  aiUsageLogs AiUsageLog[]
+
+  @@index([userId])
+  @@index([status])
+}
+
+// =====================================================
+// System
+// =====================================================
+model SystemSetting {
+  key       String   @id
+  value     String
+  updatedAt DateTime @updatedAt
+}
+
+model AdminLog {
+  id        String   @id @default(cuid())
+  adminId   String
+  action    String
+  target    String?
+  payload   Json?
+  ip        String?
+  userAgent String?
+  createdAt DateTime @default(now())
+
+  admin User @relation(fields: [adminId], references: [id], onDelete: Cascade)
+
+  @@index([adminId, createdAt])
+  @@index([action])
+}

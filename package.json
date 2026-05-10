@@ -1,0 +1,32 @@
+{
+  "name": "ai-saas-starter",
+  "version": "0.1.0",
+  "private": true,
+  "packageManager": "pnpm@10.27.0",
+  "scripts": {
+    "dev:api": "pnpm --filter @app/api dev",
+    "dev:web": "pnpm --filter @app/web dev",
+    "dev:admin": "pnpm --filter @app/admin dev",
+    "build": "pnpm -r --filter='./packages/**' build && pnpm -r --filter='./apps/**' build",
+    "build:api": "pnpm --filter @app/api build",
+    "build:web": "pnpm --filter @app/web build",
+    "build:admin": "pnpm --filter @app/admin build",
+    "db:generate": "pnpm --filter @app/db generate",
+    "db:migrate": "pnpm --filter @app/db migrate",
+    "db:push": "pnpm --filter @app/db push",
+    "db:seed": "pnpm --filter @app/db seed",
+    "db:studio": "pnpm --filter @app/db studio",
+    "lint": "pnpm -r lint",
+    "typecheck": "pnpm -r typecheck",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md}\""
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.2"
+  },
+  "engines": {
+    "node": ">=20",
+    "pnpm": ">=9"
+  }
+}

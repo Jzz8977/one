@@ -1,0 +1,86 @@
+// 阶段 15 高级功能骨架。需要时复制到 schema.prisma 末尾后 migrate。
+
+// === 多租户 ===
+model Tenant {
+  id        String   @id @default(cuid())
+  slug      String   @unique
+  name      String
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model TenantMember {
+  tenantId String
+  userId   String
+  role     String   @default("member") // owner | admin | member
+  createdAt DateTime @default(now())
+
+  @@id([tenantId, userId])
+}
+
+// === 邀请 / 分销 ===
+model Invitation {
+  id        String   @id @default(cuid())
+  code      String   @unique
+  inviterId String
+  expiresAt DateTime?
+  status    String   @default("active")
+  createdAt DateTime @default(now())
+}
+
+model Referral {
+  id         String   @id @default(cuid())
+  inviterId  String
+  inviteeId  String   @unique
+  createdAt  DateTime @default(now())
+}
+
+model Commission {
+  id           String   @id @default(cuid())
+  userId       String
+  sourceUserId String
+  orderId      String
+  amount       Int
+  status       String   @default("pending") // pending | settled | rejected
+  createdAt    DateTime @default(now())
+}
+
+// === 会员订阅 ===
+model Plan {
+  id           String   @id @default(cuid())
+  name         String
+  description  String?
+  price        Int      // 分
+  periodMonths Int      @default(1)
+  monthCredits Int      @default(0)
+  active       Boolean  @default(true)
+}
+
+model Subscription {
+  id          String   @id @default(cuid())
+  userId      String
+  planId      String
+  status      String   @default("active") // active | canceled | expired
+  periodStart DateTime
+  periodEnd   DateTime
+  autoRenew   Boolean  @default(true)
+  createdAt   DateTime @default(now())
+
+  @@index([userId, status])
+  @@index([periodEnd])
+}
+
+// === OAuth 账户 ===
+model OauthAccount {
+  id              String   @id @default(cuid())
+  userId          String
+  provider        String   // github | google | wechat
+  providerUserId  String
+  accessToken     String?
+  refreshToken    String?
+  raw             Json?
+  createdAt       DateTime @default(now())
+
+  @@unique([provider, providerUserId])
+  @@index([userId])
+}
