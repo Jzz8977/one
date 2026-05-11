@@ -15,7 +15,8 @@ model User {
   id             String   @id @default(cuid())
   email          String   @unique
   phone          String?  @unique
-  passwordHash   String
+  passwordHash   String?  // nullable: Google-only users have no local password
+  googleSub      String?  @unique // Google's stable user id (claims.sub)
   status         String   @default("active") // active | disabled | pending
   failedLoginCount Int    @default(0)
   lockedUntil    DateTime?

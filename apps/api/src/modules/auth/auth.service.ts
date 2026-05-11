@@ -3,6 +3,7 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -12,12 +13,14 @@ import { PrismaService } from '../../prisma/prisma.service';
 import { ROLES, USER_STATUS } from '@app/shared';
 import { loadEnv } from '../../config/env';
 import type { ChangePasswordDto, LoginDto, RegisterDto } from '@app/shared';
+import type { GoogleProfile } from './google.service';
 
 const FAILED_LOGIN_LIMIT = 5;
 const LOCK_MINUTES = 15;
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
   constructor(private prisma: PrismaService, private jwt: JwtService) {}
 
   private hashRefresh(token: string) {
@@ -109,6 +112,9 @@ export class AuthService {
       throw new ForbiddenException('账号已被临时锁定，请稍后再试');
     }
     if (user.status !== USER_STATUS.ACTIVE) throw new ForbiddenException('账号已被禁用');
+    if (!user.passwordHash) {
+      throw new UnauthorizedException('该账号未设置密码，请使用 Google 登录');
+    }
 
     const ok = await argon2.verify(user.passwordHash, dto.password);
     if (!ok) {
@@ -216,6 +222,7 @@ export class AuthService {
   async changePassword(userId: string, dto: ChangePasswordDto) {
     const user = await this.prisma.user.findUnique({ where: { id: userId } });
     if (!user) throw new UnauthorizedException();
+    if (!user.passwordHash) throw new BadRequestException('账号未设置密码，请先用 Google 登录后绑定密码');
     const ok = await argon2.verify(user.passwordHash, dto.oldPassword);
     if (!ok) throw new BadRequestException('原密码错误');
     const passwordHash = await argon2.hash(dto.newPassword);
@@ -227,5 +234,90 @@ export class AuthService {
       }),
     ]);
     return { ok: true };
+  }
+
+  /**
+   * Google 登录的核心：把 Google 的 profile 落到本地 User 表。
+   *
+   *  A. googleSub 已存在 → 直接登录
+   *  B. googleSub 不存在但 verified email 命中 → 自动绑定 googleSub，登录
+   *  C. 都没有 → 新建 User + UserProfile + CreditAccount + UserRole + gift 流水
+   *
+   * 最后无论哪条分支，都走与邮箱登录完全相同的 issueSession 发证。
+   */
+  async findOrCreateGoogle(profile: GoogleProfile, meta: { ip?: string; ua?: string }) {
+    const env = loadEnv();
+
+    // A. googleSub 命中
+    const byGoogle = await this.prisma.user.findUnique({ where: { googleSub: profile.sub } });
+    if (byGoogle) {
+      if (byGoogle.status !== USER_STATUS.ACTIVE) throw new ForbiddenException('账号已被禁用');
+      await this.prisma.user.update({
+        where: { id: byGoogle.id },
+        data: { lastLoginAt: new Date() },
+      });
+      return this.issueSession(byGoogle.id, byGoogle.email, meta);
+    }
+
+    // B. 已验证邮箱命中 → 自动绑定
+    if (profile.email && profile.emailVerified) {
+      const byEmail = await this.prisma.user.findUnique({ where: { email: profile.email } });
+      if (byEmail) {
+        if (byEmail.status !== USER_STATUS.ACTIVE) throw new ForbiddenException('账号已被禁用');
+        await this.prisma.user.update({
+          where: { id: byEmail.id },
+          data: { googleSub: profile.sub, lastLoginAt: new Date() },
+        });
+        this.logger.log(`linked googleSub to existing user ${byEmail.id}`);
+        return this.issueSession(byEmail.id, byEmail.email, meta);
+      }
+    }
+
+    // C. 全新用户：完整 bootstrap
+    if (!profile.email) {
+      throw new BadRequestException('Google 未返回 email，无法创建账号');
+    }
+    const role = await this.prisma.role.upsert({
+      where: { name: ROLES.USER },
+      update: {},
+      create: { name: ROLES.USER, description: '普通用户', isSystem: true },
+    });
+    const giftSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'auth.default_register_credits' },
+    });
+    const initialCredits = Number(giftSetting?.value ?? env.DEFAULT_REGISTER_CREDITS);
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email: profile.email!,
+          googleSub: profile.sub,
+          status: USER_STATUS.ACTIVE,
+          lastLoginAt: new Date(),
+          profile: {
+            create: {
+              nickname: profile.name ?? profile.email!.split('@')[0],
+              avatar: profile.picture ?? null,
+            },
+          },
+          creditAccount: { create: { balance: initialCredits } },
+          roles: { create: { roleId: role.id } },
+        },
+      });
+      if (initialCredits > 0) {
+        await tx.creditTransaction.create({
+          data: {
+            userId: u.id,
+            type: 'gift',
+            amount: initialCredits,
+            balanceAfter: initialCredits,
+            remark: 'Google 注册赠送',
+          },
+        });
+      }
+      return u;
+    });
+    this.logger.log(`new user created via Google: ${user.id}`);
+    return this.issueSession(user.id, user.email, meta);
   }
 }

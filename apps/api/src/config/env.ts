@@ -42,6 +42,13 @@ const envSchema = z.object({
   WECHAT_API_V3_KEY: z.string().default(''),
   /** 公网回调地址，必须 HTTPS。例：https://xxx.ngrok-free.app/api/payments/wechat/notify */
   WECHAT_NOTIFY_URL: z.string().default(''),
+
+  // ===== Google OAuth =====
+  GOOGLE_CLIENT_ID: z.string().default(''),
+  GOOGLE_CLIENT_SECRET: z.string().default(''),
+  GOOGLE_REDIRECT_URI: z.string().default('http://localhost:4000/api/auth/google/callback'),
+  /** 前端基地址，Google 登录完成后跳回来落地的页面 */
+  WEB_BASE_URL: z.string().default('http://localhost:5173'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

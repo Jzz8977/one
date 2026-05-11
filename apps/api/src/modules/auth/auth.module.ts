@@ -3,6 +3,8 @@ import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { GoogleController } from './google.controller';
+import { GoogleService } from './google.service';
 import { JwtAuthGuard } from '../../common/guards/jwt.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 
@@ -14,9 +16,10 @@ import { RolesGuard } from '../../common/guards/roles.guard';
       signOptions: { expiresIn: process.env.JWT_ACCESS_EXPIRES ?? '15m' },
     }),
   ],
-  controllers: [AuthController],
+  controllers: [AuthController, GoogleController],
   providers: [
     AuthService,
+    GoogleService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },
     { provide: APP_GUARD, useClass: RolesGuard },
   ],
