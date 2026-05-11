@@ -38,18 +38,18 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-brand-50 to-slate-50 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardBody>
-          <h1 className="mb-1 text-xl font-semibold">欢迎回来</h1>
-          <p className="mb-6 text-sm text-slate-500">登录到 AI SaaS Starter</p>
+          <h1 className="mb-1 text-xl font-semibold tracking-tight">欢迎回来</h1>
+          <p className="mb-6 text-sm text-muted-foreground">登录到 AI SaaS Starter</p>
           <form className="space-y-4" onSubmit={submit}>
             <Input label="邮箱" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             <Input label="密码" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
             <Button type="submit" className="w-full" loading={loading}>登录</Button>
           </form>
-          <p className="mt-4 text-center text-sm text-slate-500">
-            还没有账号？<Link className="text-brand-600 hover:underline" to="/register">立即注册</Link>
+          <p className="mt-4 text-center text-sm text-muted-foreground">
+            还没有账号？<Link className="font-medium text-foreground underline-offset-4 hover:underline" to="/register">立即注册</Link>
           </p>
         </CardBody>
       </Card>

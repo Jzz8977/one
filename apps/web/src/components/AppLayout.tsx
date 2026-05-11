@@ -1,16 +1,26 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@app/ui';
+import {
+  LayoutDashboard,
+  Wallet,
+  CreditCard,
+  Sparkles,
+  ScrollText,
+  KeyRound,
+  UserRound,
+  LogOut,
+} from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { api } from '../lib/api';
 
 const NAV = [
-  { to: '/dashboard', label: '总览' },
-  { to: '/credits', label: '积分明细' },
-  { to: '/billing', label: '充值套餐' },
-  { to: '/ai-playground', label: 'AI Playground' },
-  { to: '/usage-logs', label: '调用日志' },
-  { to: '/api-keys', label: 'API Keys' },
-  { to: '/profile', label: '个人资料' },
+  { to: '/dashboard', label: '总览', icon: LayoutDashboard },
+  { to: '/credits', label: '积分明细', icon: Wallet },
+  { to: '/billing', label: '充值套餐', icon: CreditCard },
+  { to: '/ai-playground', label: 'AI Playground', icon: Sparkles },
+  { to: '/usage-logs', label: '调用日志', icon: ScrollText },
+  { to: '/api-keys', label: 'API Keys', icon: KeyRound },
+  { to: '/profile', label: '个人资料', icon: UserRound },
 ];
 
 export function AppLayout() {
@@ -26,29 +36,43 @@ export function AppLayout() {
   };
 
   return (
-    <div className="min-h-screen bg-slate-50">
-      <aside className="fixed inset-y-0 left-0 z-10 w-56 border-r border-slate-200 bg-white">
-        <div className="flex h-14 items-center gap-2 px-4 text-base font-semibold text-brand-700">
-          <Link to="/dashboard">{import.meta.env.VITE_SITE_NAME ?? 'AI SaaS'}</Link>
+    <div className="min-h-screen bg-muted/40">
+      <aside className="fixed inset-y-0 left-0 z-10 w-60 border-r bg-background">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <Sparkles className="h-5 w-5 text-primary" />
+          <Link to="/dashboard" className="text-base font-semibold tracking-tight">
+            {import.meta.env.VITE_SITE_NAME ?? 'AI SaaS'}
+          </Link>
         </div>
-        <nav className="px-2 py-2">
-          {NAV.map((n) => (
-            <NavLink
-              key={n.to}
-              to={n.to}
-              className={({ isActive }) =>
-                `block rounded-md px-3 py-2 text-sm transition ${isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'}`
-              }
-            >
-              {n.label}
-            </NavLink>
-          ))}
+        <nav className="space-y-1 p-2">
+          {NAV.map((n) => {
+            const Icon = n.icon;
+            return (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {n.label}
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
-      <main className="ml-56">
-        <header className="flex h-14 items-center justify-end gap-3 border-b border-slate-200 bg-white px-6">
-          <span className="text-sm text-slate-500">{user?.email}</span>
-          <Button variant="ghost" size="sm" onClick={logout}>退出</Button>
+      <main className="ml-60">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-3 border-b bg-background/80 px-6 backdrop-blur">
+          <span className="text-sm text-muted-foreground">{user?.email}</span>
+          <Button variant="ghost" size="sm" onClick={logout}>
+            <LogOut className="h-4 w-4" />
+            退出
+          </Button>
         </header>
         <div className="p-6">
           <Outlet />

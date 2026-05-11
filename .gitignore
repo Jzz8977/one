@@ -27,3 +27,14 @@ packages/db/prisma/migrations/dev.db*
 
 # Docker
 docker/data
+
+# Secrets / keys (微信支付私钥、平台公钥等)
+*.pem
+*.p12
+*.pfx
+*.key
+*.crt
+apiclient_*.pem
+pub_key.pem
+wechatpay_*.pem
+

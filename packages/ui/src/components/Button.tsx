@@ -1,47 +1,60 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
+import { Slot } from '@radix-ui/react-slot';
+import { cva, type VariantProps } from 'class-variance-authority';
+import { Loader2 } from 'lucide-react';
 import { cn } from '../utils';
 
-type Variant = 'primary' | 'secondary' | 'ghost' | 'danger' | 'outline';
-type Size = 'sm' | 'md' | 'lg';
+const buttonVariants = cva(
+  'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0',
+  {
+    variants: {
+      variant: {
+        default: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+        outline: 'border border-input bg-background hover:bg-accent hover:text-accent-foreground',
+        secondary: 'bg-secondary text-secondary-foreground hover:bg-secondary/80',
+        ghost: 'hover:bg-accent hover:text-accent-foreground',
+        link: 'text-primary underline-offset-4 hover:underline',
+        // 兼容旧 API
+        primary: 'bg-primary text-primary-foreground hover:bg-primary/90',
+        danger: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
+      },
+      size: {
+        default: 'h-10 px-4 py-2',
+        sm: 'h-9 rounded-md px-3',
+        lg: 'h-11 rounded-md px-8',
+        icon: 'h-10 w-10',
+        // 兼容旧 API
+        md: 'h-10 px-4 py-2',
+      },
+    },
+    defaultVariants: { variant: 'default', size: 'default' },
+  },
+);
 
-const variants: Record<Variant, string> = {
-  primary: 'bg-brand-600 hover:bg-brand-700 text-white shadow-sm',
-  secondary: 'bg-slate-100 hover:bg-slate-200 text-slate-900',
-  ghost: 'bg-transparent hover:bg-slate-100 text-slate-700',
-  danger: 'bg-red-600 hover:bg-red-700 text-white',
-  outline: 'border border-slate-300 hover:bg-slate-50 text-slate-700 bg-white',
-};
-
-const sizes: Record<Size, string> = {
-  sm: 'h-8 px-3 text-sm',
-  md: 'h-10 px-4 text-sm',
-  lg: 'h-11 px-6 text-base',
-};
-
-export interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
-  variant?: Variant;
-  size?: Size;
+export interface ButtonProps
+  extends ButtonHTMLAttributes<HTMLButtonElement>,
+    VariantProps<typeof buttonVariants> {
+  asChild?: boolean;
   loading?: boolean;
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
-  { className, variant = 'primary', size = 'md', loading, disabled, children, ...rest },
+  { className, variant, size, asChild = false, loading, disabled, children, ...props },
   ref,
 ) {
+  const Comp = asChild ? Slot : 'button';
   return (
-    <button
+    <Comp
       ref={ref}
+      className={cn(buttonVariants({ variant, size }), className)}
       disabled={disabled || loading}
-      className={cn(
-        'inline-flex items-center justify-center gap-2 rounded-md font-medium transition disabled:cursor-not-allowed disabled:opacity-60 focus:outline-none focus:ring-2 focus:ring-brand-500 focus:ring-offset-1',
-        variants[variant],
-        sizes[size],
-        className,
-      )}
-      {...rest}
+      {...props}
     >
-      {loading ? <span className="h-3 w-3 animate-spin rounded-full border-2 border-white border-t-transparent" /> : null}
+      {loading ? <Loader2 className="animate-spin" /> : null}
       {children}
-    </button>
+    </Comp>
   );
 });
+
+export { buttonVariants };

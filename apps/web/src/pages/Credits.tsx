@@ -30,11 +30,11 @@ export function CreditsPage() {
         <CardBody>
           <div className="flex gap-12">
             <div>
-              <div className="text-xs text-slate-500">可用</div>
-              <div className="text-2xl font-bold text-brand-700">{account.data?.balance ?? 0}</div>
+              <div className="text-xs text-muted-foreground">可用</div>
+              <div className="text-2xl font-bold text-primary">{account.data?.balance ?? 0}</div>
             </div>
             <div>
-              <div className="text-xs text-slate-500">冻结</div>
+              <div className="text-xs text-muted-foreground">冻结</div>
               <div className="text-2xl font-bold text-amber-600">{account.data?.frozenBalance ?? 0}</div>
             </div>
           </div>

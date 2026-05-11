@@ -9,6 +9,7 @@ import { UsersModule } from './modules/users/users.module';
 import { CreditsModule } from './modules/credits/credits.module';
 import { OrdersModule } from './modules/orders/orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { WechatPayModule } from './modules/payments/wechat-pay.module';
 import { AiModule } from './modules/ai/ai.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { ApiKeysModule } from './modules/api-keys/api-keys.module';
@@ -23,6 +24,7 @@ import { DashboardModule } from './modules/dashboard/dashboard.module';
       { name: 'auth', ttl: 60_000, limit: 10 },
     ]),
     PrismaModule,
+    WechatPayModule,
     AuthModule,
     UsersModule,
     CreditsModule,

@@ -33,7 +33,7 @@ export function UsersPage() {
           { key: 'creditBalance', title: '积分' },
           { key: 'status', title: '状态', render: (u) => <Badge tone={u.status === 'active' ? 'green' : 'red'}>{u.status}</Badge> },
           { key: 'createdAt', title: '注册时间', render: (u) => new Date(u.createdAt).toLocaleString() },
-          { key: 'op', title: '操作', render: (u) => <Link className="text-brand-600 hover:underline" to={`/admin/users/${u.id}`}>详情</Link> },
+          { key: 'op', title: '操作', render: (u) => <Link className="text-primary hover:underline" to={`/admin/users/${u.id}`}>详情</Link> },
         ]}
       />
     </div>

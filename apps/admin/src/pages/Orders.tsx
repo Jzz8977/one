@@ -1,6 +1,17 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { Badge, Button, Input, PageHeader, Table } from '@app/ui';
+import {
+  Badge,
+  Button,
+  Input,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+} from '@app/ui';
 import { api, unwrap } from '../lib/api';
 import type { ApiResponse, PageResult } from '@app/shared';
 
@@ -22,15 +33,20 @@ export function OrdersPage() {
   return (
     <div>
       <PageHeader title="订单管理" />
-      <div className="mb-4 flex gap-2">
+      <div className="mb-4 flex flex-wrap items-center gap-2">
         <div className="w-72"><Input placeholder="订单号 / 用户邮箱" value={keyword} onChange={(e) => setKeyword(e.target.value)} /></div>
-        <select className="rounded-md border border-slate-300 bg-white px-3 py-2 text-sm" value={status} onChange={(e) => setStatus(e.target.value)}>
-          <option value="">全部状态</option>
-          <option value="pending">待支付</option>
-          <option value="paid">已支付</option>
-          <option value="closed">已关闭</option>
-          <option value="refunded">已退款</option>
-        </select>
+        <Select value={status || 'all'} onValueChange={(v) => setStatus(v === 'all' ? '' : v)}>
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="全部状态" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">全部状态</SelectItem>
+            <SelectItem value="pending">待支付</SelectItem>
+            <SelectItem value="paid">已支付</SelectItem>
+            <SelectItem value="closed">已关闭</SelectItem>
+            <SelectItem value="refunded">已退款</SelectItem>
+          </SelectContent>
+        </Select>
         <Button onClick={() => refetch()}>搜索</Button>
       </div>
       <Table

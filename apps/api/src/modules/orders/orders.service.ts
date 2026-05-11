@@ -1,13 +1,18 @@
 import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../prisma/prisma.service';
 import { CreditsService } from '../credits/credits.service';
+import { WechatPayService } from '../payments/wechat-pay.service';
 import { ORDER_STATUS, PAYMENT_STATUS, CREDIT_TX_TYPE, type CreateOrderDto } from '@app/shared';
 import { generateOrderNo } from '../../common/utils/order-no';
 import { pageOf, pageResult } from '../../common/utils/pagination';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService, private credits: CreditsService) {}
+  constructor(
+    private prisma: PrismaService,
+    private credits: CreditsService,
+    private wechat: WechatPayService,
+  ) {}
 
   async listProducts() {
     const items = await this.prisma.product.findMany({
@@ -29,9 +34,25 @@ export class OrdersService {
     const product = await this.prisma.product.findUnique({ where: { id: dto.productId } });
     if (!product || !product.active) throw new NotFoundException('套餐不存在或已下架');
 
+    const orderNo = generateOrderNo();
+    let codeUrl: string | undefined;
+
+    // 微信扫码支付：先到微信下单拿 code_url
+    if (dto.paymentMethod === 'wechat') {
+      const result = await this.wechat.createNativeOrder({
+        outTradeNo: orderNo,
+        description: product.name,
+        totalFen: product.price,
+        attach: userId,
+      });
+      codeUrl = result.codeUrl;
+    } else if (dto.paymentMethod === 'alipay') {
+      throw new BadRequestException('支付宝暂未实现');
+    }
+
     const order = await this.prisma.order.create({
       data: {
-        orderNo: generateOrderNo(),
+        orderNo,
         userId,
         productId: product.id,
         productName: product.name,
@@ -39,7 +60,9 @@ export class OrdersService {
         amount: product.price,
         credits: product.credits,
         status: ORDER_STATUS.PENDING,
-        metadata: { paymentMethod: dto.paymentMethod },
+        metadata: codeUrl
+          ? { paymentMethod: dto.paymentMethod, codeUrl }
+          : { paymentMethod: dto.paymentMethod },
       },
     });
     await this.prisma.paymentRecord.create({
@@ -51,7 +74,7 @@ export class OrdersService {
         amount: order.amount,
       },
     });
-    return this.toDto(order);
+    return this.toDto(order, codeUrl);
   }
 
   async listMyOrders(userId: string, query: { page?: number; pageSize?: number; status?: string }) {
@@ -127,19 +150,24 @@ export class OrdersService {
     });
   }
 
-  toDto(o: {
-    id: string;
-    orderNo: string;
-    userId: string;
-    productId: string | null;
-    productName: string | null;
-    type: string;
-    amount: number;
-    credits: number;
-    status: string;
-    createdAt: Date;
-    paidAt: Date | null;
-  }) {
+  toDto(
+    o: {
+      id: string;
+      orderNo: string;
+      userId: string;
+      productId: string | null;
+      productName: string | null;
+      type: string;
+      amount: number;
+      credits: number;
+      status: string;
+      createdAt: Date;
+      paidAt: Date | null;
+      metadata?: unknown;
+    },
+    codeUrl?: string,
+  ) {
+    const meta = (o.metadata ?? {}) as { codeUrl?: string };
     return {
       id: o.id,
       orderNo: o.orderNo,
@@ -152,6 +180,7 @@ export class OrdersService {
       status: o.status,
       createdAt: o.createdAt.toISOString(),
       paidAt: o.paidAt ? o.paidAt.toISOString() : null,
+      codeUrl: codeUrl ?? meta.codeUrl ?? null,
     };
   }
 }

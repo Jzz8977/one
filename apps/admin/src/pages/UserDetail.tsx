@@ -55,7 +55,7 @@ export function UserDetailPage() {
               <div>状态：<Badge tone={data.status === 'active' ? 'green' : 'red'}>{data.status}</Badge></div>
               <div>角色：{data.roles.join(', ') || '-'}</div>
               <div>昵称：{data.nickname ?? '-'}</div>
-              <div>积分余额：<span className="font-semibold text-brand-700">{data.creditBalance}</span></div>
+              <div>积分余额：<span className="font-semibold text-primary">{data.creditBalance}</span></div>
               <div>最近登录：{data.lastLoginAt ? new Date(data.lastLoginAt).toLocaleString() : '-'}</div>
             </div>
             <div className="mt-4 flex gap-2">

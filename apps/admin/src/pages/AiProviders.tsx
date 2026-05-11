@@ -1,6 +1,21 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Button, Card, CardBody, Input, Modal, PageHeader, Table, useToast } from '@app/ui';
+import {
+  Button,
+  Card,
+  CardBody,
+  Input,
+  Label,
+  Modal,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Table,
+  useToast,
+} from '@app/ui';
 import { api, unwrap } from '../lib/api';
 import type { ApiResponse } from '@app/shared';
 
@@ -76,13 +91,22 @@ export function AiProvidersPage() {
 
       <Modal open={modelOpen} onClose={() => setModelOpen(false)} title="新增/编辑模型" footer={<Button onClick={saveModel}>保存</Button>}>
         <div className="space-y-3">
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium">供应商</span>
-            <select className="w-full rounded-md border border-slate-300 px-3 py-2 text-sm" value={editing.providerId ?? ''} onChange={(e) => setEditing({ ...editing, providerId: e.target.value })}>
-              <option value="">请选择</option>
-              {providers.data?.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
-            </select>
-          </label>
+          <div className="grid w-full items-center gap-1.5">
+            <Label>供应商</Label>
+            <Select
+              value={editing.providerId ?? ''}
+              onValueChange={(v) => setEditing({ ...editing, providerId: v })}
+            >
+              <SelectTrigger>
+                <SelectValue placeholder="请选择" />
+              </SelectTrigger>
+              <SelectContent>
+                {providers.data?.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>{p.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Input label="Model Code" value={editing.code ?? ''} onChange={(e) => setEditing({ ...editing, code: e.target.value })} />
           <Input label="名称" value={editing.name ?? ''} onChange={(e) => setEditing({ ...editing, name: e.target.value })} />
           <Input label="入价（积分/1K tokens）" type="number" value={editing.inputPricePerKToken ?? 0} onChange={(e) => setEditing({ ...editing, inputPricePerKToken: Number(e.target.value) })} />

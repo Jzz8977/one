@@ -24,8 +24,8 @@ export function DashboardPage() {
         {STATS.map((s) => (
           <Card key={s.key}>
             <CardBody>
-              <div className="text-xs text-slate-500">{s.label}</div>
-              <div className="mt-2 text-2xl font-semibold text-brand-700">
+              <div className="text-xs text-muted-foreground">{s.label}</div>
+              <div className="mt-2 text-2xl font-semibold text-primary">
                 {data ? (s.format ? s.format(data[s.key]) : data[s.key]) : '—'}
               </div>
             </CardBody>

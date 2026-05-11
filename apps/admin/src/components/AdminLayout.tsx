@@ -1,17 +1,29 @@
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { Button } from '@app/ui';
+import {
+  LayoutDashboard,
+  Users,
+  Receipt,
+  Package,
+  Activity,
+  Boxes,
+  Settings,
+  History,
+  ShieldCheck,
+  LogOut,
+} from 'lucide-react';
 import { useAuthStore } from '../store/auth';
 import { api } from '../lib/api';
 
 const NAV = [
-  { to: '/admin/dashboard', label: '总览' },
-  { to: '/admin/users', label: '用户' },
-  { to: '/admin/orders', label: '订单' },
-  { to: '/admin/products', label: '套餐' },
-  { to: '/admin/ai-logs', label: 'AI 日志' },
-  { to: '/admin/ai-providers', label: 'AI 模型' },
-  { to: '/admin/settings', label: '系统配置' },
-  { to: '/admin/logs', label: '操作日志' },
+  { to: '/admin/dashboard', label: '总览', icon: LayoutDashboard },
+  { to: '/admin/users', label: '用户', icon: Users },
+  { to: '/admin/orders', label: '订单', icon: Receipt },
+  { to: '/admin/products', label: '套餐', icon: Package },
+  { to: '/admin/ai-logs', label: 'AI 日志', icon: Activity },
+  { to: '/admin/ai-providers', label: 'AI 模型', icon: Boxes },
+  { to: '/admin/settings', label: '系统配置', icon: Settings },
+  { to: '/admin/logs', label: '操作日志', icon: History },
 ];
 
 export function AdminLayout() {
@@ -23,27 +35,47 @@ export function AdminLayout() {
     navigate('/admin/login');
   };
   return (
-    <div className="min-h-screen">
-      <aside className="fixed inset-y-0 left-0 w-56 border-r border-slate-200 bg-white">
-        <div className="flex h-14 items-center px-4 text-base font-semibold text-brand-700">
-          <Link to="/admin/dashboard">AI SaaS Admin</Link>
+    <div className="min-h-screen bg-muted/40">
+      <aside className="fixed inset-y-0 left-0 w-60 border-r bg-background">
+        <div className="flex h-14 items-center gap-2 border-b px-4">
+          <ShieldCheck className="h-5 w-5 text-primary" />
+          <Link to="/admin/dashboard" className="text-base font-semibold tracking-tight">
+            AI SaaS Admin
+          </Link>
         </div>
-        <nav className="px-2">
-          {NAV.map((n) => (
-            <NavLink key={n.to} to={n.to}
-              className={({ isActive }) =>
-                `block rounded-md px-3 py-2 text-sm transition ${isActive ? 'bg-brand-50 text-brand-700' : 'text-slate-700 hover:bg-slate-100'}`
-              }
-            >{n.label}</NavLink>
-          ))}
+        <nav className="space-y-1 p-2">
+          {NAV.map((n) => {
+            const Icon = n.icon;
+            return (
+              <NavLink
+                key={n.to}
+                to={n.to}
+                className={({ isActive }) =>
+                  `flex items-center gap-2 rounded-md px-3 py-2 text-sm transition-colors ${
+                    isActive
+                      ? 'bg-accent text-accent-foreground'
+                      : 'text-muted-foreground hover:bg-accent hover:text-accent-foreground'
+                  }`
+                }
+              >
+                <Icon className="h-4 w-4" />
+                {n.label}
+              </NavLink>
+            );
+          })}
         </nav>
       </aside>
-      <main className="ml-56">
-        <header className="flex h-14 items-center justify-end gap-3 border-b border-slate-200 bg-white px-6">
-          <span className="text-sm text-slate-500">{user?.email}</span>
-          <Button variant="ghost" size="sm" onClick={logout}>退出</Button>
+      <main className="ml-60">
+        <header className="sticky top-0 z-10 flex h-14 items-center justify-end gap-3 border-b bg-background/80 px-6 backdrop-blur">
+          <span className="text-sm text-muted-foreground">{user?.email}</span>
+          <Button variant="ghost" size="sm" onClick={logout}>
+            <LogOut className="h-4 w-4" />
+            退出
+          </Button>
         </header>
-        <div className="p-6"><Outlet /></div>
+        <div className="p-6">
+          <Outlet />
+        </div>
       </main>
     </div>
   );

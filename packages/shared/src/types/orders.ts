@@ -22,6 +22,8 @@ export interface OrderDto {
   status: string;
   createdAt: string;
   paidAt?: string | null;
+  /** 微信扫码支付时返回 weixin://wxpay/bizpayurl?... 用于前端生成二维码 */
+  codeUrl?: string | null;
 }
 
 export const createOrderSchema = z.object({

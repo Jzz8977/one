@@ -75,8 +75,8 @@ export function ApiKeysPage() {
       >
         <Card>
           <CardBody>
-            <p className="mb-2 text-sm text-amber-700">该 Key 只展示一次，请立即复制保存。</p>
-            <code className="block break-all rounded bg-slate-900 p-3 text-xs text-emerald-300">{created?.fullKey}</code>
+            <p className="mb-2 text-sm text-amber-600">该 Key 只展示一次，请立即复制保存。</p>
+            <code className="block break-all rounded bg-foreground p-3 text-xs text-emerald-400">{created?.fullKey}</code>
           </CardBody>
         </Card>
       </Modal>

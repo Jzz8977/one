@@ -37,10 +37,10 @@ export function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-slate-100 p-4">
+    <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
       <Card className="w-full max-w-sm">
         <CardBody>
-          <h1 className="mb-6 text-xl font-semibold">管理后台登录</h1>
+          <h1 className="mb-6 text-xl font-semibold tracking-tight">管理后台登录</h1>
           <form className="space-y-4" onSubmit={submit}>
             <Input label="邮箱" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
             <Input label="密码" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />

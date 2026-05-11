@@ -1,5 +1,18 @@
 import { useEffect, useState } from 'react';
-import { Button, Card, CardBody, PageHeader, Textarea, useToast } from '@app/ui';
+import {
+  Button,
+  Card,
+  CardBody,
+  Label,
+  PageHeader,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+  Textarea,
+  useToast,
+} from '@app/ui';
 import { api, unwrap } from '../lib/api';
 import { formatApiError } from '../lib/error';
 import type { AiModelDto, ApiResponse, ChatResponseDto } from '@app/shared';
@@ -42,24 +55,27 @@ export function AiPlaygroundPage() {
       <PageHeader title="AI Playground" description="试用模型，按 token 扣积分" />
       <Card>
         <CardBody>
-          <label className="mb-2 block text-sm font-medium">模型</label>
-          <select
-            className="mb-4 w-full rounded-md border border-slate-300 bg-white px-3 py-2 text-sm"
-            value={model}
-            onChange={(e) => setModel(e.target.value)}
-          >
-            {models.map((m) => (
-              <option key={m.id} value={m.code}>{m.name}（{m.code}）</option>
-            ))}
-          </select>
+          <div className="mb-4 grid w-full items-center gap-1.5">
+            <Label>模型</Label>
+            <Select value={model} onValueChange={setModel}>
+              <SelectTrigger>
+                <SelectValue placeholder="选择模型" />
+              </SelectTrigger>
+              <SelectContent>
+                {models.map((m) => (
+                  <SelectItem key={m.id} value={m.code}>{m.name}（{m.code}）</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
           <Textarea label="Prompt" rows={5} value={prompt} onChange={(e) => setPrompt(e.target.value)} />
           <Button className="mt-4" onClick={send} loading={loading}>发送</Button>
           {reply ? (
-            <div className="mt-6 rounded-md border border-slate-200 bg-slate-50 p-4">
-              <div className="mb-2 text-xs text-slate-500">
+            <div className="mt-6 rounded-md border border-border bg-muted/40 p-4">
+              <div className="mb-2 text-xs text-muted-foreground">
                 {reply.usage.promptTokens} prompt + {reply.usage.completionTokens} completion = {reply.usage.totalTokens} tokens · 消耗 {reply.usage.creditsCost} 积分
               </div>
-              <div className="whitespace-pre-wrap text-sm text-slate-800">{reply.message.content}</div>
+              <div className="whitespace-pre-wrap text-sm text-foreground">{reply.message.content}</div>
             </div>
           ) : null}
         </CardBody>
