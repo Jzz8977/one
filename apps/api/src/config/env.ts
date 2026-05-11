@@ -47,8 +47,19 @@ const envSchema = z.object({
   GOOGLE_CLIENT_ID: z.string().default(''),
   GOOGLE_CLIENT_SECRET: z.string().default(''),
   GOOGLE_REDIRECT_URI: z.string().default('http://localhost:4000/api/auth/google/callback'),
-  /** 前端基地址，Google 登录完成后跳回来落地的页面 */
+  /** 前端基地址，第三方登录完成后跳回来落地的页面 */
   WEB_BASE_URL: z.string().default('http://localhost:5173'),
+
+  // ===== WeChat 开放平台（PC 扫码登录）=====
+  WECHAT_OPEN_APP_ID: z.string().default(''),
+  WECHAT_OPEN_APP_SECRET: z.string().default(''),
+  /**
+   * 微信扫码完成后的回调地址。
+   * - 域名部分必须等于微信开放平台后台填的"授权回调域名"
+   * - 不能是 localhost / IP；本地测试用 ngrok 之类的隧道
+   * 示例：https://your-domain.com/api/auth/wechat/callback
+   */
+  WECHAT_OPEN_REDIRECT_URI: z.string().default('http://localhost:4000/api/auth/wechat/callback'),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;

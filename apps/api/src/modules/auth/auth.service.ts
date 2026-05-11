@@ -14,6 +14,7 @@ import { ROLES, USER_STATUS } from '@app/shared';
 import { loadEnv } from '../../config/env';
 import type { ChangePasswordDto, LoginDto, RegisterDto } from '@app/shared';
 import type { GoogleProfile } from './google.service';
+import type { WechatProfile } from './wechat.service';
 
 const FAILED_LOGIN_LIMIT = 5;
 const LOCK_MINUTES = 15;
@@ -319,5 +320,72 @@ export class AuthService {
     });
     this.logger.log(`new user created via Google: ${user.id}`);
     return this.issueSession(user.id, user.email, meta);
+  }
+
+  /**
+   * 微信扫码登录的核心：把微信 profile 落到本地 User 表。
+   *
+   *  A. wechatUnionId 已存在 → 直接登录
+   *  B. 不存在 → 新建 User + UserProfile + CreditAccount + UserRole + gift 流水
+   *
+   * 微信不返回 email，所以无法走 "email 匹配自动绑定" 分支。
+   */
+  async findOrCreateWechat(profile: WechatProfile, meta: { ip?: string; ua?: string }) {
+    const env = loadEnv();
+
+    // A. 已绑过
+    const existing = await this.prisma.user.findUnique({ where: { wechatUnionId: profile.uid } });
+    if (existing) {
+      if (existing.status !== USER_STATUS.ACTIVE) throw new ForbiddenException('账号已被禁用');
+      await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { lastLoginAt: new Date() },
+      });
+      return this.issueSession(existing.id, existing.email ?? '', meta);
+    }
+
+    // B. 全新用户
+    const role = await this.prisma.role.upsert({
+      where: { name: ROLES.USER },
+      update: {},
+      create: { name: ROLES.USER, description: '普通用户', isSystem: true },
+    });
+    const giftSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'auth.default_register_credits' },
+    });
+    const initialCredits = Number(giftSetting?.value ?? env.DEFAULT_REGISTER_CREDITS);
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email: null,
+          wechatUnionId: profile.uid,
+          status: USER_STATUS.ACTIVE,
+          lastLoginAt: new Date(),
+          profile: {
+            create: {
+              nickname: profile.nickname ?? `微信用户_${profile.uid.slice(0, 6)}`,
+              avatar: profile.avatar,
+            },
+          },
+          creditAccount: { create: { balance: initialCredits } },
+          roles: { create: { roleId: role.id } },
+        },
+      });
+      if (initialCredits > 0) {
+        await tx.creditTransaction.create({
+          data: {
+            userId: u.id,
+            type: 'gift',
+            amount: initialCredits,
+            balanceAfter: initialCredits,
+            remark: '微信注册赠送',
+          },
+        });
+      }
+      return u;
+    });
+    this.logger.log(`new user created via WeChat: ${user.id}`);
+    return this.issueSession(user.id, user.email ?? '', meta);
   }
 }

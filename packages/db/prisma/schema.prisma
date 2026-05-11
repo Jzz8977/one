@@ -13,10 +13,11 @@ datasource db {
 // =====================================================
 model User {
   id             String   @id @default(cuid())
-  email          String   @unique
+  email          String?  @unique // nullable: WeChat-only users have no email
   phone          String?  @unique
-  passwordHash   String?  // nullable: Google-only users have no local password
+  passwordHash   String?  // nullable: federated-only users have no local password
   googleSub      String?  @unique // Google's stable user id (claims.sub)
+  wechatUnionId  String?  @unique // WeChat 开放平台 unionid (fallback to openid if union missing)
   status         String   @default("active") // active | disabled | pending
   failedLoginCount Int    @default(0)
   lockedUntil    DateTime?

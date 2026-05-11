@@ -23,6 +23,7 @@ export function LoginPage() {
 
   const API = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
   const startGoogle = () => { window.location.href = `${API}/api/auth/google/start`; };
+  const startWechat = () => { window.location.href = `${API}/api/auth/wechat/start`; };
 
   const submit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -56,10 +57,16 @@ export function LoginPage() {
           <div className="my-5 flex items-center gap-2 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />或<span className="h-px flex-1 bg-border" />
           </div>
-          <Button type="button" variant="outline" className="w-full" onClick={startGoogle}>
-            <svg className="mr-2 inline" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.4c-.3 1.5-1.1 2.7-2.4 3.5v2.9h3.8c2.2-2 3.5-5 3.5-8.4z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.8-2.9l-3.8-2.9c-1.1.7-2.4 1.1-4 1.1-3.1 0-5.7-2.1-6.6-4.9H1.5v3.1C3.4 21.3 7.4 24 12 24z"/><path fill="#FBBC05" d="M5.4 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.5.4-2.3V6.6H1.5C.5 8.2 0 10 0 12s.5 3.8 1.5 5.4l3.9-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4C18 1.2 15.3 0 12 0 7.4 0 3.4 2.7 1.5 6.6l3.9 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg>
-            使用 Google 登录
-          </Button>
+          <div className="space-y-2">
+            <Button type="button" variant="outline" className="w-full" onClick={startGoogle}>
+              <svg className="mr-2 inline" width="16" height="16" viewBox="0 0 24 24"><path fill="#4285F4" d="M23.5 12.3c0-.8-.1-1.5-.2-2.2H12v4.2h6.4c-.3 1.5-1.1 2.7-2.4 3.5v2.9h3.8c2.2-2 3.5-5 3.5-8.4z"/><path fill="#34A853" d="M12 24c3.2 0 5.9-1.1 7.8-2.9l-3.8-2.9c-1.1.7-2.4 1.1-4 1.1-3.1 0-5.7-2.1-6.6-4.9H1.5v3.1C3.4 21.3 7.4 24 12 24z"/><path fill="#FBBC05" d="M5.4 14.3c-.2-.7-.4-1.5-.4-2.3s.1-1.5.4-2.3V6.6H1.5C.5 8.2 0 10 0 12s.5 3.8 1.5 5.4l3.9-3.1z"/><path fill="#EA4335" d="M12 4.8c1.8 0 3.4.6 4.6 1.8l3.4-3.4C18 1.2 15.3 0 12 0 7.4 0 3.4 2.7 1.5 6.6l3.9 3.1C6.3 6.9 8.9 4.8 12 4.8z"/></svg>
+              使用 Google 登录
+            </Button>
+            <Button type="button" variant="outline" className="w-full" onClick={startWechat}>
+              <svg className="mr-2 inline" width="16" height="16" viewBox="0 0 24 24"><path fill="#07C160" d="M8.69 2C4.44 2 1 4.78 1 8.21c0 1.95 1.13 3.71 2.91 4.88L3.2 15.4l2.69-1.39c.69.18 1.41.29 2.16.31-.09-.4-.14-.82-.14-1.24 0-3.21 3.05-5.81 6.81-5.81.24 0 .48.01.71.04C14.8 4.4 12.06 2 8.69 2zm-2.84 4.5c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zm5.68 0c.55 0 1 .45 1 1s-.45 1-1 1-1-.45-1-1 .45-1 1-1zM15.5 8.5c-3.59 0-6.5 2.24-6.5 5s2.91 5 6.5 5c.59 0 1.16-.06 1.7-.18l1.99 1.08-.55-1.7c1.45-.92 2.36-2.34 2.36-3.95 0-2.76-2.91-5-6.5-5zm-2.25 3.25c.41 0 .75.34.75.75s-.34.75-.75.75-.75-.34-.75-.75.34-.75.75-.75zm4.5 0c.41 0 .75.34.75.75s-.34.75-.75.75-.75-.34-.75-.75.34-.75.75-.75z"/></svg>
+              使用微信登录
+            </Button>
+          </div>
 
           <p className="mt-4 text-center text-sm text-muted-foreground">
             还没有账号？<Link className="font-medium text-foreground underline-offset-4 hover:underline" to="/register">立即注册</Link>
