@@ -31,6 +31,19 @@ export const changePasswordSchema = z.object({
 });
 export type ChangePasswordDto = z.infer<typeof changePasswordSchema>;
 
+export const phoneSchema = z.string().regex(/^1[3-9]\d{9}$/, '手机号格式不正确');
+
+export const sendSmsCodeSchema = z.object({
+  phone: phoneSchema,
+});
+export type SendSmsCodeDto = z.infer<typeof sendSmsCodeSchema>;
+
+export const smsLoginSchema = z.object({
+  phone: phoneSchema,
+  code: z.string().regex(/^\d{4,8}$/, '验证码格式不正确'),
+});
+export type SmsLoginDto = z.infer<typeof smsLoginSchema>;
+
 export interface AuthTokens {
   accessToken: string;
   refreshToken: string;

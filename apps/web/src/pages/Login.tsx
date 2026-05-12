@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { Button, Card, CardBody, Input, useToast } from '@app/ui';
 import { api, unwrap } from '../lib/api';
@@ -6,10 +6,18 @@ import { formatApiError } from '../lib/error';
 import { useAuthStore } from '../store/auth';
 import type { ApiResponse, AuthTokens } from '@app/shared';
 
+type Tab = 'password' | 'sms';
+
 export function LoginPage() {
+  const [tab, setTab] = useState<Tab>('password');
   const [email, setEmail] = useState('user@example.com');
   const [password, setPassword] = useState('User@12345');
+  const [phone, setPhone] = useState('');
+  const [code, setCode] = useState('');
   const [loading, setLoading] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const setTokens = useAuthStore((s) => s.setTokens);
   const navigate = useNavigate();
   const toast = useToast();
@@ -21,11 +29,46 @@ export function LoginPage() {
     else if (reason) toast.error(`登录失败：${reason}`);
   }, [params, toast]);
 
+  useEffect(() => () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+  }, []);
+
   const API = import.meta.env.VITE_API_BASE_URL ?? 'http://localhost:4000';
   const startGoogle = () => { window.location.href = `${API}/api/auth/google/start`; };
   const startWechat = () => { window.location.href = `${API}/api/auth/wechat/start`; };
 
-  const submit = async (e: React.FormEvent) => {
+  const startCooldown = (seconds: number) => {
+    setCooldown(seconds);
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = setInterval(() => {
+      setCooldown((s) => {
+        if (s <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+  };
+
+  const sendCode = async () => {
+    if (!/^1[3-9]\d{9}$/.test(phone)) {
+      toast.error('手机号格式不正确');
+      return;
+    }
+    setSending(true);
+    try {
+      await api.post<ApiResponse<{ ok: boolean; ttl: number }>>('/auth/sms/send', { phone });
+      toast.success('验证码已发送');
+      startCooldown(60);
+    } catch (err) {
+      toast.error(formatApiError(err, '发送失败'));
+    } finally {
+      setSending(false);
+    }
+  };
+
+  const submitPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     try {
@@ -35,12 +78,41 @@ export function LoginPage() {
       toast.success('登录成功');
       navigate('/dashboard');
     } catch (err) {
-      const msg = formatApiError(err, '登录失败');
-      toast.error(msg);
+      toast.error(formatApiError(err, '登录失败'));
     } finally {
       setLoading(false);
     }
   };
+
+  const submitSms = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setLoading(true);
+    try {
+      const resp = await api.post<ApiResponse<AuthTokens>>('/auth/sms/login', { phone, code });
+      const tokens = unwrap(resp);
+      setTokens(tokens.accessToken, tokens.refreshToken);
+      toast.success('登录成功');
+      navigate('/dashboard');
+    } catch (err) {
+      toast.error(formatApiError(err, '登录失败'));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const tabBtn = (key: Tab, label: string) => (
+    <button
+      type="button"
+      onClick={() => setTab(key)}
+      className={`flex-1 border-b-2 pb-2 text-sm transition ${
+        tab === key
+          ? 'border-foreground font-medium text-foreground'
+          : 'border-transparent text-muted-foreground hover:text-foreground'
+      }`}
+    >
+      {label}
+    </button>
+  );
 
   return (
     <div className="flex min-h-screen items-center justify-center bg-muted/40 p-4">
@@ -48,11 +120,59 @@ export function LoginPage() {
         <CardBody>
           <h1 className="mb-1 text-xl font-semibold tracking-tight">欢迎回来</h1>
           <p className="mb-6 text-sm text-muted-foreground">登录到 AI SaaS Starter</p>
-          <form className="space-y-4" onSubmit={submit}>
-            <Input label="邮箱" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
-            <Input label="密码" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
-            <Button type="submit" className="w-full" loading={loading}>登录</Button>
-          </form>
+
+          <div className="mb-5 flex gap-4">
+            {tabBtn('password', '邮箱密码')}
+            {tabBtn('sms', '手机号登录')}
+          </div>
+
+          {tab === 'password' ? (
+            <form className="space-y-4" onSubmit={submitPassword}>
+              <Input label="邮箱" name="email" type="email" required value={email} onChange={(e) => setEmail(e.target.value)} />
+              <Input label="密码" name="password" type="password" required value={password} onChange={(e) => setPassword(e.target.value)} />
+              <Button type="submit" className="w-full" loading={loading}>登录</Button>
+            </form>
+          ) : (
+            <form className="space-y-4" onSubmit={submitSms}>
+              <Input
+                label="手机号"
+                name="phone"
+                type="tel"
+                inputMode="numeric"
+                maxLength={11}
+                required
+                value={phone}
+                onChange={(e) => setPhone(e.target.value.replace(/\D/g, ''))}
+                placeholder="请输入 11 位手机号"
+              />
+              <div className="flex items-end gap-2">
+                <div className="flex-1">
+                  <Input
+                    label="验证码"
+                    name="code"
+                    inputMode="numeric"
+                    maxLength={8}
+                    required
+                    value={code}
+                    onChange={(e) => setCode(e.target.value.replace(/\D/g, ''))}
+                    placeholder="短信验证码"
+                  />
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={sendCode}
+                  loading={sending}
+                  disabled={cooldown > 0 || sending}
+                  className="whitespace-nowrap"
+                >
+                  {cooldown > 0 ? `${cooldown}s` : '发送验证码'}
+                </Button>
+              </div>
+              <Button type="submit" className="w-full" loading={loading}>登录 / 注册</Button>
+              <p className="text-center text-xs text-muted-foreground">未注册的手机号将自动创建账号</p>
+            </form>
+          )}
 
           <div className="my-5 flex items-center gap-2 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" />或<span className="h-px flex-1 bg-border" />

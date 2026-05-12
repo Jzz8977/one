@@ -388,4 +388,60 @@ export class AuthService {
     this.logger.log(`new user created via WeChat: ${user.id}`);
     return this.issueSession(user.id, user.email ?? '', meta);
   }
+
+  /**
+   * 短信验证码登录：手机号命中则直接登录；没命中就 bootstrap 一个新用户。
+   * 验证码的校验在 controller 调用 SmsService 完成后才进入这里。
+   */
+  async findOrCreateByPhone(phone: string, meta: { ip?: string; ua?: string }) {
+    const env = loadEnv();
+
+    const existing = await this.prisma.user.findUnique({ where: { phone } });
+    if (existing) {
+      if (existing.status !== USER_STATUS.ACTIVE) throw new ForbiddenException('账号已被禁用');
+      await this.prisma.user.update({
+        where: { id: existing.id },
+        data: { lastLoginAt: new Date(), failedLoginCount: 0, lockedUntil: null },
+      });
+      return this.issueSession(existing.id, existing.email ?? '', meta);
+    }
+
+    const role = await this.getOrCreateUserRole();
+    const giftSetting = await this.prisma.systemSetting.findUnique({
+      where: { key: 'auth.default_register_credits' },
+    });
+    const initialCredits = Number(giftSetting?.value ?? env.DEFAULT_REGISTER_CREDITS);
+
+    const user = await this.prisma.$transaction(async (tx) => {
+      const u = await tx.user.create({
+        data: {
+          email: null,
+          phone,
+          status: USER_STATUS.ACTIVE,
+          lastLoginAt: new Date(),
+          profile: {
+            create: {
+              nickname: `用户_${phone.slice(-4)}`,
+            },
+          },
+          creditAccount: { create: { balance: initialCredits } },
+          roles: { create: { roleId: role.id } },
+        },
+      });
+      if (initialCredits > 0) {
+        await tx.creditTransaction.create({
+          data: {
+            userId: u.id,
+            type: 'gift',
+            amount: initialCredits,
+            balanceAfter: initialCredits,
+            remark: '手机号注册赠送',
+          },
+        });
+      }
+      return u;
+    });
+    this.logger.log(`new user created via SMS: ${user.id}`);
+    return this.issueSession(user.id, user.email ?? '', meta);
+  }
 }

@@ -3,6 +3,7 @@ import { JwtModule } from '@nestjs/jwt';
 import { APP_GUARD } from '@nestjs/core';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { SmsService } from './sms.service';
 import { GoogleController } from './google.controller';
 import { GoogleService } from './google.service';
 import { WechatController } from './wechat.controller';
@@ -21,6 +22,7 @@ import { RolesGuard } from '../../common/guards/roles.guard';
   controllers: [AuthController, GoogleController, WechatController],
   providers: [
     AuthService,
+    SmsService,
     GoogleService,
     WechatService,
     { provide: APP_GUARD, useClass: JwtAuthGuard },

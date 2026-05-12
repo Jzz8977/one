@@ -60,6 +60,26 @@ const envSchema = z.object({
    * 示例：https://your-domain.com/api/auth/wechat/callback
    */
   WECHAT_OPEN_REDIRECT_URI: z.string().default('http://localhost:4000/api/auth/wechat/callback'),
+
+  // ===== SMS 短信验证码 =====
+  /** 短信服务商：dev 直接在日志里打印验证码，方便本地联调；生产换成具体厂商 */
+  SMS_PROVIDER: z.enum(['dev', 'aliyun', 'tencent']).default('dev'),
+  SMS_CODE_LENGTH: z.coerce.number().int().min(4).max(8).default(6),
+  /** 验证码有效期(秒) */
+  SMS_CODE_TTL_SECONDS: z.coerce.number().int().min(60).max(1800).default(300),
+  /** 同一手机号两次发送的最小间隔(秒) */
+  SMS_SEND_COOLDOWN_SECONDS: z.coerce.number().int().min(30).max(600).default(60),
+  // Aliyun SMS
+  ALIYUN_SMS_ACCESS_KEY_ID: z.string().default(''),
+  ALIYUN_SMS_ACCESS_KEY_SECRET: z.string().default(''),
+  ALIYUN_SMS_SIGN_NAME: z.string().default(''),
+  ALIYUN_SMS_TEMPLATE_CODE: z.string().default(''),
+  // Tencent SMS
+  TENCENT_SMS_SECRET_ID: z.string().default(''),
+  TENCENT_SMS_SECRET_KEY: z.string().default(''),
+  TENCENT_SMS_SDK_APP_ID: z.string().default(''),
+  TENCENT_SMS_SIGN_NAME: z.string().default(''),
+  TENCENT_SMS_TEMPLATE_ID: z.string().default(''),
 });
 
 export type AppEnv = z.infer<typeof envSchema>;
