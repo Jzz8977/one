@@ -36,10 +36,10 @@ export class AuthService {
     });
   }
 
-  private async signTokens(userId: string, email: string) {
+  private async signTokens(userId: string, email: string | null) {
     const env = loadEnv();
     const access = await this.jwt.signAsync(
-      { sub: userId, email },
+      { sub: userId, email: email ?? '' },
       { secret: env.JWT_ACCESS_SECRET, expiresIn: env.JWT_ACCESS_EXPIRES },
     );
     const refresh = await this.jwt.signAsync(
@@ -136,7 +136,7 @@ export class AuthService {
     return this.issueSession(user.id, user.email, meta);
   }
 
-  private async issueSession(userId: string, email: string, meta: { ip?: string; ua?: string }) {
+  private async issueSession(userId: string, email: string | null, meta: { ip?: string; ua?: string }) {
     const env = loadEnv();
     const { access, refresh } = await this.signTokens(userId, email);
     const refreshExpMs = this.parseExpiresMs(env.JWT_REFRESH_EXPIRES);
