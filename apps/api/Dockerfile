@@ -19,6 +19,8 @@ COPY tsconfig.base.json ./
 COPY packages ./packages
 COPY apps/api ./apps/api
 RUN pnpm --filter @app/db generate
+RUN pnpm --filter @app/shared build
+RUN pnpm --filter @app/db build
 RUN pnpm --filter @app/api build
 
 # ---- runner ----

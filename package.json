@@ -4,7 +4,7 @@
   "private": true,
   "packageManager": "pnpm@10.27.0",
   "scripts": {
-    "dev:api": "pnpm --filter @app/api dev",
+    "dev:api": "pnpm --filter @app/shared build && pnpm --filter @app/db build && pnpm --filter @app/api dev",
     "dev:web": "pnpm --filter @app/web dev",
     "dev:admin": "pnpm --filter @app/admin dev",
     "build": "pnpm -r --filter='./packages/**' build && pnpm -r --filter='./apps/**' build",
