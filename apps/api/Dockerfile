@@ -1,5 +1,6 @@
 FROM node:20-alpine AS base
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN apk add --no-cache openssl libc6-compat \
+ && corepack enable && corepack prepare pnpm@10.27.0 --activate
 WORKDIR /repo
 
 # ---- deps ----
@@ -25,7 +26,8 @@ RUN pnpm --filter @app/api build
 
 # ---- runner ----
 FROM node:20-alpine AS runner
-RUN corepack enable && corepack prepare pnpm@10.27.0 --activate
+RUN apk add --no-cache openssl libc6-compat \
+ && corepack enable && corepack prepare pnpm@10.27.0 --activate
 WORKDIR /app
 ENV NODE_ENV=production
 
